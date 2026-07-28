@@ -28,7 +28,7 @@ interface PracticeState {
   livekitUrl: string | null;
   transcript: TranscriptMessage[];
   loading: boolean;
-  createSession: (type: string, lessonId?: number) => Promise<void>;
+  createSession: (type: string, lessonId?: number, topicId?: number) => Promise<void>;
   createIeltsMockTest: () => Promise<void>;
   createRolePlay: (scenario: string) => Promise<void>;
   fetchSessions: (filters?: Record<string, string>) => Promise<void>;
@@ -44,11 +44,12 @@ export const usePracticeStore = create<PracticeState>((set) => ({
   transcript: [],
   loading: false,
 
-  createSession: async (type, lessonId) => {
+  createSession: async (type, lessonId, topicId?: number) => {
     set({ loading: true });
     const { data } = await api.post("/practice_sessions", {
       session_type: type,
       lesson_id: lessonId,
+      metadata: topicId ? { topic_id: topicId } : undefined,
     });
     set({
       currentSession: data.practice_session,

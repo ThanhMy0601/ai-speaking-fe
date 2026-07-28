@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { usePracticeStore } from "../store/practiceStore";
+import { useTopicStore } from "../store/topicStore";
 import {
   Room,
   RoomEvent,
@@ -17,6 +18,7 @@ const RECONNECT_DELAYS = [1000, 2000, 4000];
 
 export default function PracticeRoomPage() {
   const { type } = useParams<{ type: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
     currentSession,
@@ -29,11 +31,16 @@ export default function PracticeRoomPage() {
     createRolePlay,
     loading,
   } = usePracticeStore();
+  const { completeTopic } = useTopicStore();
+
+  const topicId = searchParams.get("topic_id") ? Number(searchParams.get("topic_id")) : undefined;
+  const topicTitle = searchParams.get("topic_title") ?? undefined;
 
   const [muted, setMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("connecting");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [scenario] = useState("job_interview");
+  const [sessionEnded, setSessionEnded] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -46,7 +53,7 @@ export default function PracticeRoomPage() {
         } else if (type === "roleplay") {
           await createRolePlay(scenario);
         } else {
-          await createSession("free_practice");
+          await createSession("free_practice", undefined, topicId);
         }
       } catch {
         setConnectionStatus("failed");
@@ -62,7 +69,6 @@ export default function PracticeRoomPage() {
     const room = new Room();
     roomRef.current = room;
 
-    // Handle remote audio tracks (agent's voice)
     room.on(
       RoomEvent.TrackSubscribed,
       (track: RemoteTrack, _pub: RemoteTrackPublication, _participant: RemoteParticipant) => {
@@ -76,14 +82,10 @@ export default function PracticeRoomPage() {
       }
     );
 
-    room.on(
-      RoomEvent.TrackUnsubscribed,
-      (track: RemoteTrack) => {
-        track.detach().forEach((el) => el.remove());
-      }
-    );
+    room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
+      track.detach().forEach((el) => el.remove());
+    });
 
-    // Handle agent transcript data messages
     room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
       try {
         const text = new TextDecoder().decode(payload);
@@ -98,17 +100,17 @@ export default function PracticeRoomPage() {
           });
         }
       } catch {
-        // Not JSON data, ignore
+        // Not JSON data
       }
     });
 
-    // Handle transcription events from LiveKit agents
     room.on(RoomEvent.TranscriptionReceived, (segments, participant) => {
       for (const seg of segments) {
         if (seg.final) {
-          const speaker = participant?.identity === room.localParticipant.identity
-            ? "learner" as const
-            : "ai" as const;
+          const speaker =
+            participant?.identity === room.localParticipant.identity
+              ? ("learner" as const)
+              : ("ai" as const);
           addTranscriptMessage({
             index: Date.now(),
             speaker,
@@ -119,29 +121,20 @@ export default function PracticeRoomPage() {
       }
     });
 
-    room.on(RoomEvent.Connected, () => {
-      setConnectionStatus("connected");
-    });
-
-    room.on(RoomEvent.Reconnecting, () => {
-      setConnectionStatus("reconnecting");
-    });
-
+    room.on(RoomEvent.Connected, () => setConnectionStatus("connected"));
+    room.on(RoomEvent.Reconnecting, () => setConnectionStatus("reconnecting"));
     room.on(RoomEvent.Reconnected, () => {
       setConnectionStatus("connected");
       setReconnectAttempt(0);
     });
-
     room.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
       if (reason === DisconnectReason.CLIENT_INITIATED) return;
       setConnectionStatus("failed");
     });
 
-    // Connect to the room
     const connect = async () => {
       try {
         await room.connect(livekitUrl, livekitToken);
-        // Publish microphone
         await room.localParticipant.setMicrophoneEnabled(true);
         setConnectionStatus("connected");
       } catch (err) {
@@ -152,7 +145,6 @@ export default function PracticeRoomPage() {
 
     connect();
 
-    // Cleanup on unmount
     return () => {
       audioRef.current?.remove();
       room.disconnect();
@@ -183,31 +175,44 @@ export default function PracticeRoomPage() {
         await roomRef.current.localParticipant.setMicrophoneEnabled(!muted);
         setConnectionStatus("connected");
       } catch {
-        if (reconnectAttempt + 1 >= 3) {
-          setConnectionStatus("failed");
-        }
+        if (reconnectAttempt + 1 >= 3) setConnectionStatus("failed");
       }
     }
   }, [reconnectAttempt, livekitToken, livekitUrl, muted]);
 
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
     roomRef.current?.disconnect();
+    setSessionEnded(true);
+
+    // Mark topic as completed if this was a topic-based session
+    if (topicId && currentSession) {
+      try {
+        await completeTopic(topicId, currentSession.id);
+      } catch {
+        // best-effort
+      }
+    }
+
     navigate("/roadmap");
   };
+
+  const sessionTitle = topicTitle
+    ? `${topicTitle} Practice`
+    : type === "ielts"
+    ? "IELTS Mock Test"
+    : type === "roleplay"
+    ? "Role Play Session"
+    : "Free Practice";
 
   if (loading) return <div className="loading">Setting up practice room...</div>;
 
   return (
     <div className="practice-room-page">
       <header className="practice-header">
-        <h1>
-          {type === "ielts" && "IELTS Mock Test"}
-          {type === "roleplay" && "Role Play Session"}
-          {type === "free" && "Free Practice"}
-        </h1>
+        <h2>{sessionTitle}</h2>
         <span className={`connection-status status-${connectionStatus}`}>
           {connectionStatus === "reconnecting" && `Reconnecting... (${reconnectAttempt}/3)`}
-          {connectionStatus === "connected" && "Connected"}
+          {connectionStatus === "connected" && "● Connected"}
           {connectionStatus === "connecting" && "Connecting..."}
           {connectionStatus === "failed" && "Connection failed"}
         </span>
@@ -216,12 +221,27 @@ export default function PracticeRoomPage() {
       <div className="practice-layout">
         <div className="avatar-section">
           <div className="avatar-placeholder">
-            <p>🤖 AI Avatar</p>
-            <p className="avatar-note">
-              TalkingHead.js + Ready Player Me avatar renders here
-            </p>
+            <p style={{ fontSize: "3rem" }}>🤖</p>
+            <h3>AI Tutor</h3>
+            <p>Speak naturally — your AI tutor is listening</p>
+            {topicTitle && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.625rem 1rem",
+                  background: "#f0f4ff",
+                  borderRadius: 8,
+                  fontSize: "0.85rem",
+                  color: "#6366f1",
+                  fontWeight: 600,
+                  border: "1px solid #c7d2fe",
+                }}
+              >
+                Topic: {topicTitle}
+              </div>
+            )}
             {currentSession && (
-              <p className="connection-info">
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.75rem" }}>
                 Room: {currentSession.livekit_room_name}
               </p>
             )}
@@ -241,7 +261,7 @@ export default function PracticeRoomPage() {
         onReconnect={handleReconnect}
       />
 
-      {connectionStatus === "failed" && (
+      {connectionStatus === "failed" && !sessionEnded && (
         <div className="session-recovery" role="alert">
           <p>Connection lost. Your transcript has been saved.</p>
           <button onClick={() => navigate("/roadmap")}>Back to Roadmap</button>

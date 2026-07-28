@@ -21,8 +21,8 @@ export default function Layout() {
         </div>
         {user && (
           <div className="nav-user">
-            <span>⚡ {user.total_xp} XP</span>
-            <span>🔥 {user.current_streak}</span>
+            <span className="nav-stat">⚡ {user.total_xp} XP</span>
+            <span className="nav-stat">🔥 {user.current_streak}</span>
             <button onClick={handleLogout} className="nav-logout">Logout</button>
           </div>
         )}

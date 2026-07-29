@@ -1,104 +1,114 @@
-/* Reset, base element styles, and the few things utilities can't express. */
+/* Base element styles, and the few things utilities can't express.
+ *
+ * EVERYTHING HERE MUST STAY INSIDE `@layer base`.
+ *
+ * `@import "tailwindcss"` declares the cascade order `theme, base, components,
+ * utilities`. Unlayered CSS beats *every* layer regardless of specificity, so a
+ * plain `* { margin: 0 }` at the top level of this file silently defeats
+ * `.mx-auto`, `.p-5`, `.px-6` and every other spacing utility in the app — a
+ * single-character-looking mistake that reads as "the whole design is broken".
+ *
+ * Tailwind's preflight already emits, inside `@layer base`:
+ *   *, ::after, ::before, ::backdrop { box-sizing: border-box; border: 0 solid;
+ *                                      margin: 0; padding: 0 }
+ * so do not restate it. Restating it is what broke the layout.
+ */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* A single ambient wash so the background isn't a flat block of navy. Fixed
+     rather than scrolling, so it reads as light in the room, not as content. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(60rem 40rem at 15% -10%, rgb(109 94 248 / 0.16), transparent 60%),
+      radial-gradient(50rem 36rem at 95% 5%, rgb(34 211 238 / 0.1), transparent 55%);
+  }
+
+  h1, h2, h3, h4 {
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Preflight zeroes the border but leaves the UA's grey button background,
+     and v4 dropped the default pointer cursor. */
+  button {
+    cursor: pointer;
+    background: none;
+  }
+
+  a {
+    color: var(--color-accent-soft);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-ink);
+  }
+
+  /* One visible focus treatment everywhere, rather than per-component. */
+  :focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background: rgb(109 94 248 / 0.35);
+    color: var(--color-ink);
+  }
+
+  /* Scrollbars in a dark app default to a bright system chrome that punches a
+     hole in the design. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  min-height: 100dvh;
-  background: var(--color-base);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/* A single ambient wash so the background isn't a flat block of navy. Fixed
-   rather than scrolling, so it reads as light in the room, not as content. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background:
-    radial-gradient(60rem 40rem at 15% -10%, rgb(109 94 248 / 0.16), transparent 60%),
-    radial-gradient(50rem 36rem at 95% 5%, rgb(34 211 238 / 0.1), transparent 55%);
-}
-
-h1, h2, h3, h4 {
-  line-height: 1.2;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-button {
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-
-a {
-  color: var(--color-accent-soft);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--color-ink);
-}
-
-/* One visible focus treatment everywhere, rather than per-component. */
-:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-  border-radius: var(--radius-xs);
-}
-
-::selection {
-  background: rgb(109 94 248 / 0.35);
-  color: var(--color-ink);
-}
-
-/* Scrollbars in a dark app default to a bright system chrome that punches a
-   hole in the design. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border-strong) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
-  border-radius: 999px;
-  border: 3px solid transparent;
-  background-clip: content-box;
-}
-
-/* The whole motion system, off in one place. Previously nothing respected
-   this at all. */
+/* Deliberately unlayered: this is a global override that must beat everything,
+   including utilities. `!important` inverts layer order, so an unlayered
+   !important here outranks any utility's animation or transition. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

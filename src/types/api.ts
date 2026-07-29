@@ -12,6 +12,7 @@ import type {
   PracticeSession,
   Progress,
   SessionFeedback,
+  SessionRecording,
   Topic,
   TopicAttempt,
   TopicDetail,
@@ -98,6 +99,17 @@ export interface SessionResponse {
 /** GET /practice_sessions/:id/feedback — polled by the post-session screen. */
 export interface FeedbackResponse {
   feedback: SessionFeedback;
+}
+
+/**
+ * GET /practice_sessions/:id/recording — polled alongside feedback.
+ *
+ * Audio and feedback arrive independently (egress upload and the Gemini
+ * call race each other), so the report screen renders each with its own
+ * loading state rather than waiting for both.
+ */
+export interface RecordingResponse {
+  recording: SessionRecording;
 }
 
 export interface TranscriptResponse {

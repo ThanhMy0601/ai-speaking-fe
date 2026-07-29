@@ -139,10 +139,48 @@ export interface TranscriptMessage {
   text: string;
   spoke_started_at: string | null;
   spoke_ended_at?: string | null;
-  /** Ms into the session recording — null until egress lands in Phase 5. */
+  /**
+   * Position within the session recording, derived server-side by
+   * subtracting the egress start time from the absolute speech timestamp.
+   * Null when there is no recording. Can legitimately be negative: a
+   * learner can speak before the egress worker has spun up, so clamp to 0
+   * when seeking rather than treating it as invalid.
+   */
   offset_start_ms?: number | null;
   offset_end_ms?: number | null;
   interrupted?: boolean;
+}
+
+/**
+ * Mirrors LiveKit's EgressStatus (prefix dropped, lowercased), plus
+ * "starting" for the window between our row insert and LiveKit accepting
+ * the request, and "unavailable" for a session that has no recording row
+ * at all.
+ */
+export type RecordingStatus =
+  | "unavailable"
+  | "starting"
+  | "active"
+  | "ending"
+  | "complete"
+  | "failed"
+  | "aborted"
+  | "limit_reached";
+
+/**
+ * Playback details for a session recording.
+ *
+ * `url` is a presigned link minted per request, not a stored one — it is
+ * only present when the file actually landed in the bucket, and it expires
+ * after `expires_in` seconds. A "complete" egress whose upload failed has
+ * no key and therefore no url.
+ */
+export interface SessionRecording {
+  status: RecordingStatus;
+  duration_ms: number | null;
+  recording_started_at: string | null;
+  url?: string;
+  expires_in?: number;
 }
 
 export type FeedbackStatus =

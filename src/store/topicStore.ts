@@ -1,17 +1,9 @@
 import { create } from "zustand";
 import api from "../lib/api";
+import type { TopicsResponse } from "../types/api";
+import type { Topic } from "../types/domain";
 
-export interface Topic {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-  color: string;
-  gradient_from: string;
-  gradient_to: string;
-  sequence_order: number;
-  completed: boolean;
-}
+export type { Topic };
 
 interface TopicState {
   topics: Topic[];
@@ -28,7 +20,7 @@ export const useTopicStore = create<TopicState>((set) => ({
   fetchTopics: async () => {
     set({ loading: true });
     try {
-      const { data } = await api.get("/topics");
+      const { data } = await api.get<TopicsResponse>("/topics");
       set({ topics: data.topics, loading: false });
     } catch {
       set({ loading: false });

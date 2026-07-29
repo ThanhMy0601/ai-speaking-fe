@@ -1,18 +1,7 @@
 import { create } from "zustand";
 import api from "../lib/api";
-
-interface User {
-  id: number;
-  email: string;
-  display_name: string;
-  learning_goal: string | null;
-  proficiency_level: string | null;
-  onboarding_completed: boolean;
-  total_xp: number;
-  current_streak: number;
-  longest_streak: number;
-  total_practice_hours: number;
-}
+import type { AuthResponse, UserResponse } from "../types/api";
+import type { User } from "../types/domain";
 
 interface AuthState {
   user: User | null;
@@ -35,7 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post<AuthResponse>("/auth/login", { email, password });
       localStorage.setItem("jwt_token", data.token);
       set({ token: data.token, user: data.user, loading: false });
     } catch {
@@ -47,7 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (email, password, displayName) => {
     set({ loading: true });
     try {
-      const { data } = await api.post("/auth/register", {
+      const { data } = await api.post<AuthResponse>("/auth/register", {
         email,
         password,
         display_name: displayName,
@@ -67,7 +56,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchMe: async () => {
     try {
-      const { data } = await api.get("/users/me");
+      const { data } = await api.get<UserResponse>("/users/me");
       set({ user: data.user });
     } catch {
       set({ user: null, token: null });

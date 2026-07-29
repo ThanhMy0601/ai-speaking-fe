@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import api from "../lib/api";
-
-interface Achievement {
-  key: string;
-  title: string;
-  description: string;
-  icon_url: string;
-  earned_at: string;
-}
+import type { AchievementsResponse, StreaksResponse } from "../types/api";
+import type { Achievement } from "../types/domain";
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
@@ -16,8 +10,20 @@ export default function ProfilePage() {
   const [streakDates, setStreakDates] = useState<string[]>([]);
 
   useEffect(() => {
-    api.get("/progress/achievements").then(({ data }) => setAchievements(data.achievements));
-    api.get("/progress/streaks").then(({ data }) => setStreakDates(data.recent_activity));
+    let cancelled = false;
+
+    api
+      .get<AchievementsResponse>("/progress/achievements")
+      .then(({ data }) => !cancelled && setAchievements(data.achievements))
+      .catch(() => !cancelled && setAchievements([]));
+    api
+      .get<StreaksResponse>("/progress/streaks")
+      .then(({ data }) => !cancelled && setStreakDates(data.recent_activity))
+      .catch(() => !cancelled && setStreakDates([]));
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!user) return null;

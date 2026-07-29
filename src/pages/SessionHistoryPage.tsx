@@ -1,44 +1,27 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { usePracticeStore } from "../store/practiceStore";
 
 export default function SessionHistoryPage() {
   const { sessions, fetchSessions, loading } = usePracticeStore();
-  const [typeFilter, setTypeFilter] = useState("");
-  const navigate = useNavigate();
 
+  // The session-type filter was dropped along with IELTS and role-play —
+  // free_practice is the only type left, so a one-option select is noise.
   useEffect(() => {
-    fetchSessions(typeFilter ? { session_type: typeFilter } : undefined);
-  }, [typeFilter, fetchSessions]);
+    fetchSessions();
+  }, [fetchSessions]);
 
   return (
     <div className="history-page">
       <h1>Session History</h1>
 
-      <div className="filters">
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          aria-label="Filter by session type"
-        >
-          <option value="">All Types</option>
-          <option value="free_practice">Free Practice</option>
-          <option value="ielts_mock_test">IELTS Mock Test</option>
-          <option value="role_play">Role Play</option>
-        </select>
-      </div>
-
       {loading && <p>Loading sessions...</p>}
 
+      {/* Rows are not clickable yet: /sessions/:id has no route. The report
+          screen lands in Phase 8, and until then a click would render a
+          blank page. */}
       <div className="sessions-list" role="list">
         {sessions.map((session) => (
-          <button
-            key={session.id}
-            className="session-card"
-            onClick={() => navigate(`/sessions/${session.id}`)}
-            role="listitem"
-          >
-            <div className="session-type">{session.session_type.replace(/_/g, " ")}</div>
+          <div key={session.id} className="session-card" role="listitem">
             <div className="session-date">
               {new Date(session.created_at).toLocaleDateString()}
             </div>
@@ -47,10 +30,7 @@ export default function SessionHistoryPage() {
                 ? `${Math.round(session.duration_seconds / 60)} min`
                 : "—"}
             </div>
-            <div className="session-score">
-              {session.overall_score != null ? `${session.overall_score}/100` : "—"}
-            </div>
-          </button>
+          </div>
         ))}
         {!loading && sessions.length === 0 && (
           <p>No sessions yet. Start practicing!</p>

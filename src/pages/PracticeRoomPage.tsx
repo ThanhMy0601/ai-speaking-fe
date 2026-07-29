@@ -17,7 +17,6 @@ import SessionControls from "../components/SessionControls";
 const RECONNECT_DELAYS = [1000, 2000, 4000];
 
 export default function PracticeRoomPage() {
-  const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
@@ -27,8 +26,6 @@ export default function PracticeRoomPage() {
     transcript,
     addTranscriptMessage,
     createSession,
-    createIeltsMockTest,
-    createRolePlay,
     loading,
   } = usePracticeStore();
   const { completeTopic } = useTopicStore();
@@ -39,7 +36,6 @@ export default function PracticeRoomPage() {
   const [muted, setMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("connecting");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
-  const [scenario] = useState("job_interview");
   const [sessionEnded, setSessionEnded] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,19 +44,13 @@ export default function PracticeRoomPage() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        if (type === "ielts") {
-          await createIeltsMockTest();
-        } else if (type === "roleplay") {
-          await createRolePlay(scenario);
-        } else {
-          await createSession("free_practice", undefined, topicId);
-        }
+        await createSession(topicId);
       } catch {
         setConnectionStatus("failed");
       }
     };
     initSession();
-  }, [type]);
+  }, [topicId]);
 
   // 2. Connect to LiveKit room once we have a token
   useEffect(() => {
@@ -196,13 +186,7 @@ export default function PracticeRoomPage() {
     navigate("/roadmap");
   };
 
-  const sessionTitle = topicTitle
-    ? `${topicTitle} Practice`
-    : type === "ielts"
-    ? "IELTS Mock Test"
-    : type === "roleplay"
-    ? "Role Play Session"
-    : "Free Practice";
+  const sessionTitle = topicTitle ? `${topicTitle} Practice` : "Free Practice";
 
   if (loading) return <div className="loading">Setting up practice room...</div>;
 

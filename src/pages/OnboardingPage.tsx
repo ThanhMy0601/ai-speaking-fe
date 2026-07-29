@@ -2,6 +2,33 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuthStore } from "../store/authStore";
+import type { UserResponse } from "../types/api";
+import type { LearningGoal } from "../types/domain";
+
+// Mirrors User::LEARNING_GOALS in the Rails model. IELTS was removed from
+// the product in Phase 2; these values feed prompt personalization.
+const LEARNING_GOALS: { value: LearningGoal; label: string; hint: string }[] = [
+  {
+    value: "general_conversation",
+    label: "Everyday Conversation",
+    hint: "Small talk, daily life, making friends",
+  },
+  {
+    value: "business_english",
+    label: "Business English",
+    hint: "Meetings, presentations, professional networking",
+  },
+  {
+    value: "travel",
+    label: "Travel & Living Abroad",
+    hint: "Airports, hotels, directions, local culture",
+  },
+  {
+    value: "academic",
+    label: "Academic English",
+    hint: "Study, campus life, discussing complex ideas",
+  },
+];
 
 export default function OnboardingPage() {
   const [learningGoal, setLearningGoal] = useState("");
@@ -15,7 +42,7 @@ export default function OnboardingPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post("/users/onboarding", {
+      const { data } = await api.post<UserResponse>("/users/onboarding", {
         learning_goal: learningGoal,
         proficiency_level: proficiencyLevel,
         weekly_practice_minutes: weeklyMinutes,
@@ -34,29 +61,20 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit}>
           <fieldset>
             <legend>What's your learning goal?</legend>
-            <label className="radio-card">
-              <input
-                type="radio"
-                name="goal"
-                value="business_english"
-                checked={learningGoal === "business_english"}
-                onChange={(e) => setLearningGoal(e.target.value)}
-                required
-              />
-              <span>Business English</span>
-              <small>Negotiations, presentations, meetings</small>
-            </label>
-            <label className="radio-card">
-              <input
-                type="radio"
-                name="goal"
-                value="ielts_speaking"
-                checked={learningGoal === "ielts_speaking"}
-                onChange={(e) => setLearningGoal(e.target.value)}
-              />
-              <span>IELTS Speaking</span>
-              <small>Part 1, 2, 3 exam preparation</small>
-            </label>
+            {LEARNING_GOALS.map((goal) => (
+              <label key={goal.value} className="radio-card">
+                <input
+                  type="radio"
+                  name="goal"
+                  value={goal.value}
+                  checked={learningGoal === goal.value}
+                  onChange={(e) => setLearningGoal(e.target.value)}
+                  required
+                />
+                <span>{goal.label}</span>
+                <small>{goal.hint}</small>
+              </label>
+            ))}
           </fieldset>
 
           <fieldset>

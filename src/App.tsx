@@ -7,7 +7,6 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import RoadmapPage from "./pages/RoadmapPage";
-import LessonDetailPage from "./pages/LessonDetailPage";
 import PracticeRoomPage from "./pages/PracticeRoomPage";
 import SessionHistoryPage from "./pages/SessionHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -35,7 +34,6 @@ function App() {
           <Route index element={<Navigate to="/roadmap" replace />} />
           <Route path="onboarding" element={<OnboardingPage />} />
           <Route path="roadmap" element={<RoadmapPage />} />
-          <Route path="lessons/:id" element={<LessonDetailPage />} />
           <Route path="practice/:type" element={<PracticeRoomPage />} />
           <Route path="sessions" element={<SessionHistoryPage />} />
           <Route path="profile" element={<ProfilePage />} />

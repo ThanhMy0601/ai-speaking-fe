@@ -1,0 +1,111 @@
+/* Reset, base element styles, and the few things utilities can't express. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* A single ambient wash so the background isn't a flat block of navy. Fixed
+   rather than scrolling, so it reads as light in the room, not as content. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%, rgb(109 94 248 / 0.16), transparent 60%),
+    radial-gradient(50rem 36rem at 95% 5%, rgb(34 211 238 / 0.1), transparent 55%);
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+a {
+  color: var(--color-accent-soft);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-ink);
+}
+
+/* One visible focus treatment everywhere, rather than per-component. */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  background: rgb(109 94 248 / 0.35);
+  color: var(--color-ink);
+}
+
+/* Scrollbars in a dark app default to a bright system chrome that punches a
+   hole in the design. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* The whole motion system, off in one place. Previously nothing respected
+   this at all. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

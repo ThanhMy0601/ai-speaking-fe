@@ -1,3 +1,5 @@
+import Button from "./ui/Button";
+
 interface Props {
   muted: boolean;
   onToggleMute: () => void;
@@ -14,24 +16,24 @@ export default function SessionControls({
   onReconnect,
 }: Props) {
   return (
-    <div className="session-controls" role="toolbar" aria-label="Session controls">
-      <button
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Button
         onClick={onToggleMute}
-        className={`control-btn ${muted ? "muted" : ""}`}
-        aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+        variant={muted ? "danger" : "secondary"}
+        aria-pressed={muted}
       >
-        {muted ? "🔇 Unmute" : "🎤 Mute"}
-      </button>
+        {muted ? "Unmute" : "Mute"}
+      </Button>
 
       {connectionStatus === "failed" && (
-        <button onClick={onReconnect} className="control-btn reconnect-btn">
-          🔄 Reconnect
-        </button>
+        <Button onClick={onReconnect} variant="secondary">
+          Reconnect
+        </Button>
       )}
 
-      <button onClick={onEndSession} className="control-btn end-btn" aria-label="End session">
-        ⏹ End Session
-      </button>
+      <Button onClick={onEndSession} variant="primary">
+        End session
+      </Button>
     </div>
   );
 }

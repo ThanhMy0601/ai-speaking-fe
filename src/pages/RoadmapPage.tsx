@@ -1,210 +1,172 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTopicStore, Topic } from "../store/topicStore";
+import { useTopicStore } from "../store/topicStore";
 import { useAuthStore } from "../store/authStore";
-
-function TopicModal({
-  topic,
-  onClose,
-  onStart,
-  loading,
-}: {
-  topic: Topic;
-  onClose: () => void;
-  onStart: () => void;
-  loading: boolean;
-}) {
-  return (
-    <div className="topic-modal-overlay" onClick={onClose}>
-      <div className="topic-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="topic-modal-header">
-          <span className="topic-modal-icon">{topic.icon}</span>
-          <div>
-            <h2>{topic.title}</h2>
-            <p>Topic {topic.sequence_order} of 10</p>
-          </div>
-        </div>
-
-        <p className="topic-modal-desc">{topic.description}</p>
-
-        <div
-          style={{
-            background: `linear-gradient(135deg, ${topic.gradient_from}15, ${topic.gradient_to}10)`,
-            border: `1.5px solid ${topic.color}30`,
-            borderRadius: 12,
-            padding: "1rem 1.25rem",
-            marginBottom: "1.75rem",
-          }}
-        >
-          <p style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: 1.6 }}>
-            <strong style={{ color: "#1e293b" }}>How it works:</strong> Your AI
-            tutor will guide you through a natural English conversation focused
-            on this topic. After the session, your progress will be marked as
-            complete.
-          </p>
-        </div>
-
-        {topic.completed && (
-          <div
-            style={{
-              background: "#dcfce7",
-              border: "1.5px solid #86efac",
-              borderRadius: 10,
-              padding: "0.75rem 1rem",
-              marginBottom: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontSize: "0.875rem",
-              color: "#16a34a",
-              fontWeight: 600,
-            }}
-          >
-            ✅ Practised {topic.attempt_count}{" "}
-            {topic.attempt_count === 1 ? "time" : "times"}
-            {topic.level_count > 1 &&
-              ` — next session goes to level ${Math.min(
-                topic.attempt_count + 1,
-                topic.level_count
-              )} of ${topic.level_count}`}
-          </div>
-        )}
-
-        <div className="topic-modal-actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="btn-primary"
-            onClick={onStart}
-            disabled={loading}
-            style={{
-              background: `linear-gradient(135deg, ${topic.gradient_from}, ${topic.gradient_to})`,
-              border: "none",
-            }}
-          >
-            {loading ? "Starting..." : topic.completed ? "Practice Again" : "Start Practice"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import type { Topic } from "../types/domain";
+import TopicCard from "../components/TopicCard";
+import Button from "../components/ui/Button";
+import Modal from "../components/ui/Modal";
+import Badge from "../components/ui/Badge";
+import ProgressBar from "../components/ui/ProgressBar";
+import Skeleton from "../components/ui/Skeleton";
+import EmptyState from "../components/ui/EmptyState";
 
 export default function RoadmapPage() {
   const { topics, fetchTopics, loading } = useTopicStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  const [starting, setStarting] = useState(false);
+  const [selected, setSelected] = useState<Topic | null>(null);
 
   useEffect(() => {
     fetchTopics();
   }, [fetchTopics]);
 
-  const completedCount = topics.filter((t) => t.completed).length;
-  const progressPct = topics.length > 0 ? Math.round((completedCount / topics.length) * 100) : 0;
+  const completed = topics.filter((t) => t.completed);
+  const nextUp = topics.find((t) => !t.completed);
 
-  const handleStartPractice = async () => {
-    if (!selectedTopic) return;
-    setStarting(true);
-    navigate(`/practice/free?topic_id=${selectedTopic.id}&topic_title=${encodeURIComponent(selectedTopic.title)}`);
+  const start = (topic: Topic) => {
+    navigate(
+      `/practice/free?topic_id=${topic.id}&topic_title=${encodeURIComponent(topic.title)}`
+    );
   };
 
   return (
-    <div className="topics-page">
-      {/* Header */}
-      <div className="topics-header">
-        <div className="topics-header-left">
-          <h1>Your Learning Journey</h1>
-          <p>10 topics to master English — one conversation at a time</p>
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold sm:text-3xl">Your journey</h1>
+          <p className="mt-1.5 text-ink-muted">
+            Ten topics. One conversation at a time.
+          </p>
         </div>
-        <div className="topics-stats">
-          <div className="stat-pill">
-            ⚡ {user?.total_xp ?? 0} XP
-          </div>
-          <div className="stat-pill">
+
+        <div className="flex items-center gap-2">
+          <Badge tone="accent">⚡ {user?.total_xp ?? 0} XP</Badge>
+          <Badge tone={user?.current_streak ? "warning" : "neutral"}>
             🔥 {user?.current_streak ?? 0} day streak
+          </Badge>
+        </div>
+      </header>
+
+      {topics.length > 0 && (
+        <section className="rounded-lg border border-border bg-surface-glass p-5">
+          <div className="mb-3 flex items-baseline justify-between gap-4">
+            <h2 className="text-sm font-semibold text-ink-muted">Progress</h2>
+            <span className="text-sm text-ink-subtle tabular-nums">
+              {completed.length} of {topics.length}
+            </span>
           </div>
-        </div>
-      </div>
+          <ProgressBar
+            value={completed.length}
+            max={topics.length}
+            label="Topics completed"
+          />
 
-      {/* Progress bar */}
-      <div className="topics-progress-bar">
-        <span className="progress-label">Overall Progress</span>
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
-        </div>
-        <span className="progress-count">{completedCount}/{topics.length} topics</span>
-      </div>
-
-      {/* Topics Journey Grid */}
-      {loading && <div className="loading">Loading topics...</div>}
-
-      <div className="topics-journey">
-        {topics.map((topic) => (
-          <div
-            key={topic.id}
-            className={`topic-card${topic.completed ? " completed" : ""}`}
-            onClick={() => setSelectedTopic(topic)}
-            role="button"
-            aria-label={`Topic: ${topic.title}`}
-          >
-            {/* Banner */}
-            <div
-              className="topic-card-banner"
-              style={{
-                background: `linear-gradient(135deg, ${topic.gradient_from}, ${topic.gradient_to})`,
-              }}
-            >
-              <span className="topic-icon">{topic.icon}</span>
-              <span className="topic-number">{topic.sequence_order}</span>
-              {topic.completed && (
-                <div className="topic-completed-badge">✅</div>
-              )}
+          {nextUp && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="min-w-0">
+                <p className="text-xs text-ink-subtle">Up next</p>
+                <p className="truncate font-medium text-ink">
+                  <span aria-hidden className="mr-1.5">
+                    {nextUp.icon}
+                  </span>
+                  {nextUp.title}
+                </p>
+              </div>
+              <Button variant="primary" onClick={() => start(nextUp)}>
+                Continue
+              </Button>
             </div>
+          )}
+        </section>
+      )}
 
-            {/* Body */}
-            <div className="topic-card-body">
-              <div className="topic-card-sequence">Topic {topic.sequence_order}</div>
-              <div className="topic-card-title">{topic.title}</div>
-              <div className="topic-card-desc">{topic.description}</div>
+      <section>
+        <h2 className="sr-only">All topics</h2>
 
-              <div className="topic-card-action">
-                <button
-                  className="topic-start-btn"
-                  style={{
-                    background: `linear-gradient(135deg, ${topic.gradient_from}, ${topic.gradient_to})`,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedTopic(topic);
-                  }}
-                >
-                  {topic.completed ? "Practice Again" : "Start"} →
-                </button>
-                <div className={`topic-status-label ${topic.completed ? "done" : "new"}`}>
-                  {topic.completed ? (
-                    <><span>✓</span> Completed</>
-                  ) : (
-                    <><span>○</span> Not started</>
-                  )}
-                </div>
+        {loading && topics.length === 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-56" />
+            ))}
+          </div>
+        ) : topics.length === 0 ? (
+          <EmptyState
+            icon="🗺️"
+            title="No topics yet"
+            description="Topics haven't been set up on the server. Seed the database to get started."
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {topics.map((topic) => (
+              <TopicCard key={topic.id} topic={topic} onSelect={setSelected} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <Modal
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        title={selected?.title ?? ""}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setSelected(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={() => selected && start(selected)}>
+              {selected?.completed ? "Practise again" : "Start practising"}
+            </Button>
+          </>
+        }
+      >
+        {selected && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <span
+                className="grid size-12 shrink-0 place-items-center rounded-md text-2xl"
+                style={{
+                  background: `linear-gradient(135deg, ${selected.gradient_from}, ${selected.gradient_to})`,
+                }}
+                aria-hidden
+              >
+                {selected.icon}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <Badge>{selected.estimated_minutes} min</Badge>
+                {selected.cefr_level && (
+                  <Badge tone="info">{selected.cefr_level.toUpperCase()}</Badge>
+                )}
+                {selected.level_count > 1 && (
+                  <Badge tone="accent">{selected.level_count} levels</Badge>
+                )}
               </div>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Topic Practice Modal */}
-      {selectedTopic && (
-        <TopicModal
-          topic={selectedTopic}
-          onClose={() => setSelectedTopic(null)}
-          onStart={handleStartPractice}
-          loading={starting}
-        />
-      )}
+            <p className="text-ink-muted">{selected.description}</p>
+
+            {selected.completed ? (
+              <div className="rounded-md border border-[rgb(74_222_128/0.28)] bg-success-dim px-3.5 py-3 text-sm text-success">
+                Practised {selected.attempt_count}{" "}
+                {selected.attempt_count === 1 ? "time" : "times"}.
+                {selected.level_count > 1 && (
+                  <>
+                    {" "}
+                    Next session goes to level{" "}
+                    {Math.min(selected.attempt_count + 1, selected.level_count)} of{" "}
+                    {selected.level_count}.
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border border-border bg-surface-glass px-3.5 py-3 text-sm text-ink-muted">
+                Your tutor opens the conversation on this topic — no need to
+                think of something to say first.
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import RoadmapPage from "./pages/RoadmapPage";
 import PracticeRoomPage from "./pages/PracticeRoomPage";
 import SessionHistoryPage from "./pages/SessionHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -38,6 +39,9 @@ function App() {
           <Route path="sessions" element={<SessionHistoryPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
+        {/* Catch-all. Without it, a bad URL rendered a blank page under the
+            nav with no indication anything was wrong. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

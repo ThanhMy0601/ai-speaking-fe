@@ -18,6 +18,8 @@ jobs:
           cache: "npm"
 
       - run: npm ci
-      - run: npx tsc --noEmit
+      # tsc -b, not tsc --noEmit: this is a solution-style tsconfig (Vite
+      # template with `references`), and plain --noEmit on it checks NOTHING.
+      - run: npx tsc -b --force
       - run: npm test
       - run: npm run build

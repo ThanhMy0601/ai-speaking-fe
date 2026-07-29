@@ -1,15 +1,8 @@
 import { useEffect, useRef } from "react";
-
-interface Message {
-  index: number;
-  speaker: "learner" | "ai";
-  text: string;
-  timestamp: string;
-  pronunciation_score?: number;
-}
+import type { TranscriptMessage } from "../types/domain";
 
 interface Props {
-  messages: Message[];
+  messages: TranscriptMessage[];
 }
 
 export default function TranscriptPanel({ messages }: Props) {
@@ -25,15 +18,14 @@ export default function TranscriptPanel({ messages }: Props) {
         <p className="transcript-empty">Start speaking to begin the conversation...</p>
       )}
       {messages.map((msg) => (
-        <div key={msg.index} className={`transcript-msg msg-${msg.speaker}`}>
+        <div key={msg.sequence} className={`transcript-msg msg-${msg.speaker}`}>
           <span className="msg-speaker">{msg.speaker === "learner" ? "You" : "AI"}</span>
           <p className="msg-text">{msg.text}</p>
-          {msg.pronunciation_score != null && (
-            <span className="msg-score" title="Pronunciation score">
-              🎯 {msg.pronunciation_score}/100
-            </span>
+          {msg.spoke_started_at && (
+            <time className="msg-time">
+              {new Date(msg.spoke_started_at).toLocaleTimeString()}
+            </time>
           )}
-          <time className="msg-time">{new Date(msg.timestamp).toLocaleTimeString()}</time>
         </div>
       ))}
       <div ref={bottomRef} />

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { usePracticeStore } from "../store/practiceStore";
 import { useTopicStore } from "../store/topicStore";
 import {
@@ -26,6 +26,7 @@ export default function PracticeRoomPage() {
     transcript,
     addTranscriptMessage,
     createSession,
+    endSession,
     loading,
   } = usePracticeStore();
   const { completeTopic } = useTopicStore();
@@ -39,6 +40,7 @@ export default function PracticeRoomPage() {
   const [sessionEnded, setSessionEnded] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const liveSequenceRef = useRef(0);
 
   // 1. Create the practice session via API
   useEffect(() => {
@@ -76,24 +78,9 @@ export default function PracticeRoomPage() {
       track.detach().forEach((el) => el.remove());
     });
 
-    room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
-      try {
-        const text = new TextDecoder().decode(payload);
-        const data = JSON.parse(text);
-        if (data.type === "transcript" || data.speaker) {
-          addTranscriptMessage({
-            index: transcript.length,
-            speaker: data.speaker || "ai",
-            text: data.text || data.content || "",
-            timestamp: new Date().toISOString(),
-            pronunciation_score: data.pronunciation_score,
-          });
-        }
-      } catch {
-        // Not JSON data
-      }
-    });
-
+    // Live transcript comes from LiveKit's native transcription events.
+    // (The old DataReceived handler listened for payloads the agent never
+    // sent, and captured a stale `transcript.length` for its keys.)
     room.on(RoomEvent.TranscriptionReceived, (segments, participant) => {
       for (const seg of segments) {
         if (seg.final) {
@@ -102,10 +89,10 @@ export default function PracticeRoomPage() {
               ? ("learner" as const)
               : ("ai" as const);
           addTranscriptMessage({
-            index: Date.now(),
+            sequence: liveSequenceRef.current++,
             speaker,
             text: seg.text,
-            timestamp: new Date().toISOString(),
+            spoke_started_at: new Date().toISOString(),
           });
         }
       }
@@ -174,7 +161,20 @@ export default function PracticeRoomPage() {
     roomRef.current?.disconnect();
     setSessionEnded(true);
 
-    // Mark topic as completed if this was a topic-based session
+    if (currentSession) {
+      // Optimistic "ending" for UX; the room_finished webhook (or the
+      // stale-session sweep) is what actually completes the session and
+      // awards XP server-side.
+      try {
+        await endSession(currentSession.id);
+      } catch {
+        // best-effort — the sweep will catch it
+      }
+    }
+
+    // Immediate topic completion keeps the roadmap UI in sync; the server
+    // path is idempotent, so the completion job finding it already done is
+    // a no-op, never a double XP award.
     if (topicId && currentSession) {
       try {
         await completeTopic(topicId, currentSession.id);

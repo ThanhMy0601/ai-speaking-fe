@@ -18,7 +18,13 @@ export type ProficiencyLevel = "beginner" | "intermediate" | "advanced";
 /** IELTS mock test and role-play were removed in Phase 2. */
 export type SessionType = "free_practice";
 
-export type SessionStatus = "connecting" | "active" | "completed" | "failed";
+export type SessionStatus =
+  | "connecting"
+  | "active"
+  /** Learner pressed End — optimistic; the webhook/sweep actually completes. */
+  | "ending"
+  | "completed"
+  | "failed";
 
 export type Speaker = "learner" | "ai";
 
@@ -106,8 +112,12 @@ export interface PracticeSession {
   id: number;
   session_type: SessionType;
   status: SessionStatus;
+  topic_id: number | null;
   livekit_room_name: string;
   duration_seconds: number | null;
+  /** Denormalized at completion; 0 until the session completes. */
+  turn_count: number;
+  learner_word_count: number;
   /**
    * Always null today. The only thing that ever wrote it was a mock
    * scorer returning rand(50..95); real per-word scoring is a later
@@ -119,12 +129,75 @@ export interface PracticeSession {
   created_at: string;
 }
 
+/**
+ * A persisted utterance, served from transcript_messages rows. The old
+ * jsonb-blob shape (index/timestamp) is gone along with the blob itself.
+ */
 export interface TranscriptMessage {
-  index: number;
+  sequence: number;
   speaker: Speaker;
   text: string;
-  timestamp: string;
-  pronunciation_score?: number;
+  spoke_started_at: string | null;
+  spoke_ended_at?: string | null;
+  /** Ms into the session recording — null until egress lands in Phase 5. */
+  offset_start_ms?: number | null;
+  offset_end_ms?: number | null;
+  interrupted?: boolean;
+}
+
+export type FeedbackStatus =
+  | "pending"
+  | "generating"
+  | "ready"
+  | "insufficient_data"
+  | "failed";
+
+export interface GrammarCorrection {
+  original: string;
+  corrected: string;
+  explanation: string;
+  category?: string;
+}
+
+export interface VocabularyUpgrade {
+  used: string;
+  suggestion: string;
+  why: string;
+  example_sentence?: string;
+}
+
+export interface FluencyAssessment {
+  summary?: string;
+  hesitation_pattern?: string;
+  pacing_note?: string;
+}
+
+export interface ConversationStats {
+  turn_count?: number;
+  learner_turn_count?: number;
+  learner_word_count?: number;
+  unique_word_count?: number;
+  vocabulary_richness?: number;
+  filler_word_count?: number;
+  longest_turn_words?: number;
+  avg_turn_words?: number;
+  words_per_minute?: number | null;
+  duration_seconds?: number | null;
+}
+
+/**
+ * Real Gemini analysis over the real transcript. When status is "failed"
+ * the UI says feedback is unavailable — there is no fallback content.
+ */
+export interface SessionFeedback {
+  status: FeedbackStatus;
+  grammar_corrections?: GrammarCorrection[];
+  vocabulary_upgrades?: VocabularyUpgrade[];
+  fluency_assessment?: FluencyAssessment;
+  strengths?: string[];
+  overall_summary?: string | null;
+  conversation_stats?: ConversationStats;
+  generated_at?: string | null;
 }
 
 export interface Achievement {

@@ -11,6 +11,7 @@ import type {
   AdminTopic,
   PracticeSession,
   Progress,
+  SessionFeedback,
   Topic,
   TopicAttempt,
   TopicDetail,
@@ -92,7 +93,11 @@ export interface SessionsResponse {
 
 export interface SessionResponse {
   practice_session: PracticeSession;
-  feedback: Record<string, unknown> | null;
+}
+
+/** GET /practice_sessions/:id/feedback — polled by the post-session screen. */
+export interface FeedbackResponse {
+  feedback: SessionFeedback;
 }
 
 export interface TranscriptResponse {

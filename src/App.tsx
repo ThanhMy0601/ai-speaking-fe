@@ -10,6 +10,7 @@ import RoadmapPage from "./pages/RoadmapPage";
 import PracticeRoomPage from "./pages/PracticeRoomPage";
 import SessionHistoryPage from "./pages/SessionHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
+import SessionReportPage from "./pages/SessionReportPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
           <Route path="roadmap" element={<RoadmapPage />} />
           <Route path="practice/:type" element={<PracticeRoomPage />} />
           <Route path="sessions" element={<SessionHistoryPage />} />
+          <Route path="sessions/:id" element={<SessionReportPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
         {/* Catch-all. Without it, a bad URL rendered a blank page under the

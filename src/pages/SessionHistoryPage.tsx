@@ -66,10 +66,11 @@ export default function SessionHistoryPage() {
             const done = session.status === "completed";
 
             return (
-              <li
-                key={session.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border bg-surface-glass p-4"
-              >
+              <li key={session.id}>
+                <Link
+                  to={`/sessions/${session.id}`}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border bg-surface-glass p-4 transition-colors duration-(--duration-fast) hover:border-border-strong hover:bg-surface-hover"
+                >
                 <span
                   className="grid size-10 shrink-0 place-items-center rounded-sm text-lg"
                   style={
@@ -110,9 +111,10 @@ export default function SessionHistoryPage() {
                   </div>
                 </dl>
 
-                <Badge tone={done ? "success" : session.status === "failed" ? "danger" : "neutral"}>
-                  {done ? "Completed" : session.status}
-                </Badge>
+                  <Badge tone={done ? "success" : session.status === "failed" ? "danger" : "neutral"}>
+                    {done ? "Completed" : session.status}
+                  </Badge>
+                </Link>
               </li>
             );
           })}

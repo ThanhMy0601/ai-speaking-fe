@@ -82,8 +82,15 @@ export default function SessionEnded({
         <Button variant="primary" onClick={onPractiseAgain}>
           Practise again
         </Button>
+        {sessionId && (
+          // The full report adds the recording and a click-to-seek
+          // transcript on top of the feedback shown above.
+          <Link to={`/sessions/${sessionId}`}>
+            <Button variant="secondary">Listen back</Button>
+          </Link>
+        )}
         <Link to="/roadmap">
-          <Button variant="secondary">Back to topics</Button>
+          <Button variant="ghost">Back to topics</Button>
         </Link>
       </div>
 

@@ -68,6 +68,13 @@ export default function SessionReportPage() {
   const recordingDead = !recording || RECORDING_DEAD.has(recording.status);
   const feedbackSettled = feedback && SETTLED.has(feedback.status);
 
+  // A session that never reached a terminal state has no feedback to wait
+  // for: GenerateSessionFeedbackJob is only enqueued *by* the completion
+  // job. Showing "Analysing your conversation…" here would be a lie — the
+  // honest answer is that the session hasn't finished being wrapped up,
+  // which in practice means the background worker isn't running.
+  const stillWrappingUp = !["completed", "failed"].includes(session.status);
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -123,7 +130,9 @@ export default function SessionReportPage() {
           />
         ) : recordingDead ? (
           <p className="rounded-md border border-border bg-surface-glass px-4 py-3.5 text-sm text-ink-muted">
-            No recording is available for this session.
+            {recording?.status === "failed" || recording?.status === "aborted"
+              ? "The recording for this session didn't complete, so there's nothing to play back."
+              : "No recording is available for this session."}
           </p>
         ) : (
           // "starting" / "active" / "ending": the upload is still in flight.
@@ -153,6 +162,11 @@ export default function SessionReportPage() {
 
         {feedbackSettled && feedback ? (
           <FeedbackSummary feedback={feedback} />
+        ) : stillWrappingUp ? (
+          <p className="rounded-md border border-[rgb(251_191_36/0.3)] bg-warning-dim px-4 py-3.5 text-sm text-warning">
+            This session hasn't finished being wrapped up yet, so there's no
+            feedback for it. It should settle within a couple of minutes.
+          </p>
         ) : timedOut ? (
           <p className="rounded-md border border-border bg-surface-glass px-4 py-3.5 text-sm text-ink-muted">
             Feedback is taking longer than expected. Check back shortly.

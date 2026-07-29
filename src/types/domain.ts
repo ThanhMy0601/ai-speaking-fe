@@ -33,7 +33,14 @@ export interface User {
   current_streak: number;
   longest_streak: number;
   total_practice_hours: number;
+  role: Role;
 }
+
+export type CefrLevel = "a1" | "a2" | "b1" | "b2" | "c1" | "c2";
+
+export type Role = "learner" | "admin";
+
+export type AttemptStatus = "in_progress" | "completed" | "abandoned";
 
 export interface Topic {
   id: number;
@@ -44,7 +51,55 @@ export interface Topic {
   gradient_from: string;
   gradient_to: string;
   sequence_order: number;
+  cefr_level: CefrLevel | null;
+  estimated_minutes: number;
+  level_count: number;
+  /** True once at least one attempt has been completed. */
   completed: boolean;
+  /** Completed attempts only — topics are repeatable. */
+  attempt_count: number;
+  last_practised_at: string | null;
+}
+
+export interface TopicLevel {
+  id: number;
+  level: number;
+  title: string;
+  conversation_guide: string | null;
+  target_vocabulary: string[];
+  target_grammar: string[];
+}
+
+export interface TopicAttempt {
+  id: number;
+  attempt_number: number;
+  status: AttemptStatus;
+  /** Null until real scoring exists — never fabricated. */
+  score: number | null;
+  xp_earned: number;
+  topic_level_id: number | null;
+  practice_session_id: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/** GET /topics/:id returns the list shape plus teaching content and history. */
+export interface TopicDetail extends Topic {
+  conversation_guide: string | null;
+  target_vocabulary: string[];
+  target_grammar: string[];
+  levels: TopicLevel[];
+  attempts: TopicAttempt[];
+}
+
+/** Admin-only shape: includes fields learners never see. */
+export interface AdminTopic extends Omit<Topic, "completed" | "attempt_count" | "last_practised_at"> {
+  active: boolean;
+  conversation_guide: string | null;
+  opening_line: string | null;
+  target_vocabulary: string[];
+  target_grammar: string[];
+  updated_at: string;
 }
 
 export interface PracticeSession {

@@ -8,9 +8,13 @@
 
 import type {
   Achievement,
+  AdminTopic,
   PracticeSession,
   Progress,
   Topic,
+  TopicAttempt,
+  TopicDetail,
+  TopicLevel,
   TranscriptMessage,
   User,
 } from "./domain";
@@ -42,12 +46,33 @@ export interface TopicsResponse {
 }
 
 export interface TopicResponse {
-  topic: Topic;
+  topic: TopicDetail;
 }
 
 export interface TopicCompleteResponse {
-  completed: boolean;
-  topic_id: number;
+  attempt: TopicAttempt;
+  xp_earned?: number;
+  achievements?: { key: string; title: string }[];
+  already_completed?: boolean;
+}
+
+// --- Admin ---------------------------------------------------------------
+
+export interface AdminTopicsResponse {
+  topics: AdminTopic[];
+}
+
+export interface AdminTopicResponse {
+  topic: AdminTopic & { levels: AdminTopicLevel[] };
+}
+
+export interface AdminTopicLevel extends TopicLevel {
+  opening_line: string | null;
+  active: boolean;
+}
+
+export interface AdminTopicLevelResponse {
+  level: AdminTopicLevel & { topic_id: number };
 }
 
 export interface CreateSessionResponse {

@@ -60,7 +60,13 @@ function TopicModal({
               fontWeight: 600,
             }}
           >
-            ✅ You've completed this topic! Practice again anytime.
+            ✅ Practised {topic.attempt_count}{" "}
+            {topic.attempt_count === 1 ? "time" : "times"}
+            {topic.level_count > 1 &&
+              ` — next session goes to level ${Math.min(
+                topic.attempt_count + 1,
+                topic.level_count
+              )} of ${topic.level_count}`}
           </div>
         )}
 

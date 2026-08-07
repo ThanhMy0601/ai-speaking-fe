@@ -118,8 +118,19 @@ export interface TopicDetail extends Topic {
   attempts: TopicAttempt[];
 }
 
-/** Admin-only shape: includes fields learners never see. */
-export interface AdminTopic extends Omit<Topic, "completed" | "attempt_count" | "last_practised_at"> {
+/**
+ * Admin-only shape: includes fields learners never see.
+ *
+ * vocabulary_count is omitted on purpose — the admin serializer returns the
+ * whole target_vocabulary array, so the count is `target_vocabulary.length`.
+ * Declaring a field the endpoint does not send is a lie TypeScript cannot
+ * catch, since nothing validates the JSON at runtime.
+ */
+export interface AdminTopic
+  extends Omit<
+    Topic,
+    "completed" | "attempt_count" | "last_practised_at" | "vocabulary_count"
+  > {
   active: boolean;
   conversation_guide: string | null;
   opening_line: string | null;

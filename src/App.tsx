@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useAuthStore } from "./store/authStore";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -12,6 +13,8 @@ import SessionHistoryPage from "./pages/SessionHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
 import SessionReportPage from "./pages/SessionReportPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminTopicsPage from "./pages/admin/AdminTopicsPage";
+import AdminTopicFormPage from "./pages/admin/AdminTopicFormPage";
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -40,6 +43,25 @@ function App() {
           <Route path="sessions" element={<SessionHistoryPage />} />
           <Route path="sessions/:id" element={<SessionReportPage />} />
           <Route path="profile" element={<ProfilePage />} />
+
+          {/* Cosmetic gate only — Admin::BaseController#require_admin is what
+              actually enforces this, and it raises Forbidden. */}
+          <Route
+            path="admin/topics"
+            element={
+              <AdminRoute>
+                <AdminTopicsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/topics/:id"
+            element={
+              <AdminRoute>
+                <AdminTopicFormPage />
+              </AdminRoute>
+            }
+          />
         </Route>
         {/* Catch-all. Without it, a bad URL rendered a blank page under the
             nav with no indication anything was wrong. */}

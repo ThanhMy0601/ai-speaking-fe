@@ -59,6 +59,13 @@ export default function Layout() {
                 {item.label}
               </NavLink>
             ))}
+            {/* Hiding this is presentation, not security — the endpoints
+                behind it return 403 to anyone who is not an admin. */}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/topics" className={navClass}>
+                Admin
+              </NavLink>
+            )}
           </div>
 
           {user && (

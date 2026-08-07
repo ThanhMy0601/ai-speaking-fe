@@ -4,6 +4,7 @@ import { useTopicStore } from "../store/topicStore";
 import { useAuthStore } from "../store/authStore";
 import type { Topic } from "../types/domain";
 import TopicCard from "../components/TopicCard";
+import TopicVocabularyList from "../components/topic/TopicVocabularyList";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
@@ -12,14 +13,35 @@ import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
 
 export default function RoadmapPage() {
-  const { topics, fetchTopics, loading } = useTopicStore();
+  const { topics, fetchTopics, fetchTopic, currentTopic, loading } = useTopicStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Topic | null>(null);
 
+  // The vocabulary list replaces the modal's body rather than stacking a
+  // second Modal on top. Modal binds Escape on `document`, so two open at
+  // once would both close on one keypress, and the focus trap of the lower
+  // one keeps fighting the upper for focus.
+  const [view, setView] = useState<"detail" | "vocabulary">("detail");
+
   useEffect(() => {
     fetchTopics();
   }, [fetchTopics]);
+
+  // The list payload carries only a count; terms and glosses come from
+  // GET /topics/:id.
+  const vocabularyReady = selected !== null && currentTopic?.id === selected.id;
+
+  const openVocabulary = () => {
+    if (!selected) return;
+    setView("vocabulary");
+    if (!vocabularyReady) fetchTopic(selected.id);
+  };
+
+  const closeModal = () => {
+    setSelected(null);
+    setView("detail");
+  };
 
   const completed = topics.filter((t) => t.completed);
   const nextUp = topics.find((t) => !t.completed);
@@ -107,20 +129,47 @@ export default function RoadmapPage() {
 
       <Modal
         open={selected !== null}
-        onClose={() => setSelected(null)}
-        title={selected?.title ?? ""}
+        onClose={closeModal}
+        title={
+          view === "vocabulary"
+            ? `Từ vựng — ${selected?.title ?? ""}`
+            : selected?.title ?? ""
+        }
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setSelected(null)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={() => selected && start(selected)}>
-              {selected?.completed ? "Practise again" : "Start practising"}
-            </Button>
-          </>
+          view === "vocabulary" ? (
+            <>
+              <Button variant="ghost" onClick={() => setView("detail")}>
+                Quay lại
+              </Button>
+              <Button variant="primary" onClick={() => selected && start(selected)}>
+                {selected?.completed ? "Practise again" : "Start practising"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={closeModal}>
+                Cancel
+              </Button>
+              {(selected?.vocabulary_count ?? 0) > 0 && (
+                <Button variant="secondary" onClick={openVocabulary}>
+                  Xem từ vựng ({selected?.vocabulary_count})
+                </Button>
+              )}
+              <Button variant="primary" onClick={() => selected && start(selected)}>
+                {selected?.completed ? "Practise again" : "Start practising"}
+              </Button>
+            </>
+          )
         }
       >
-        {selected && (
+        {selected && view === "vocabulary" && (
+          <TopicVocabularyList
+            items={vocabularyReady ? currentTopic.target_vocabulary : null}
+            loading={!vocabularyReady}
+          />
+        )}
+
+        {selected && view === "detail" && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <span

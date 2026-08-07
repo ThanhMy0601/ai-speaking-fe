@@ -48,6 +48,24 @@ export type Role = "learner" | "admin";
 
 export type AttemptStatus = "in_progress" | "completed" | "abandoned";
 
+/**
+ * One entry in a topic's word list.
+ *
+ * The learner-facing endpoints return these objects. The agent gets a plain
+ * `string[]` instead — AgentContextBuilder flattens to `term`, because
+ * prompts.py joins the list into a sentence and the gloss is for the
+ * learner's screen only.
+ *
+ * `meaning_vi` is nullable: the migration that reshaped this column filled it
+ * with null, and the seeds only cover the ten shipped topics. A topic an admin
+ * creates without glosses is valid, so the UI must handle a missing meaning
+ * rather than render "null".
+ */
+export interface TopicVocabularyItem {
+  term: string;
+  meaning_vi: string | null;
+}
+
 export interface Topic {
   id: number;
   title: string;
@@ -60,6 +78,8 @@ export interface Topic {
   cefr_level: CefrLevel | null;
   estimated_minutes: number;
   level_count: number;
+  /** Size of target_vocabulary, so the list view can label the button. */
+  vocabulary_count: number;
   /** True once at least one attempt has been completed. */
   completed: boolean;
   /** Completed attempts only — topics are repeatable. */
@@ -72,7 +92,7 @@ export interface TopicLevel {
   level: number;
   title: string;
   conversation_guide: string | null;
-  target_vocabulary: string[];
+  target_vocabulary: TopicVocabularyItem[];
   target_grammar: string[];
 }
 
@@ -92,7 +112,7 @@ export interface TopicAttempt {
 /** GET /topics/:id returns the list shape plus teaching content and history. */
 export interface TopicDetail extends Topic {
   conversation_guide: string | null;
-  target_vocabulary: string[];
+  target_vocabulary: TopicVocabularyItem[];
   target_grammar: string[];
   levels: TopicLevel[];
   attempts: TopicAttempt[];
@@ -103,7 +123,7 @@ export interface AdminTopic extends Omit<Topic, "completed" | "attempt_count" | 
   active: boolean;
   conversation_guide: string | null;
   opening_line: string | null;
-  target_vocabulary: string[];
+  target_vocabulary: TopicVocabularyItem[];
   target_grammar: string[];
   updated_at: string;
 }

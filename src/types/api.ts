@@ -19,6 +19,7 @@ import type {
   TopicLevel,
   TranscriptMessage,
   User,
+  VocabularyNote,
 } from "./domain";
 
 /** Rails renders validation failures as { errors: [...] } with 422. */
@@ -135,4 +136,14 @@ export interface AchievementsResponse {
 export interface LivekitTokenResponse {
   token: string;
   livekit_url: string;
+}
+
+// --- Vocabulary ----------------------------------------------------------
+
+export interface VocabularyNotesResponse {
+  notes: VocabularyNote[];
+}
+
+export interface VocabularyNoteResponse {
+  note: VocabularyNote;
 }

@@ -4,6 +4,7 @@ import { cx } from "../lib/cx";
 
 const NAV = [
   { to: "/roadmap", label: "Journey" },
+  { to: "/vocabulary", label: "Từ vựng" },
   { to: "/sessions", label: "History" },
   { to: "/profile", label: "Profile" },
 ];

@@ -11,6 +11,7 @@ import RoadmapPage from "./pages/RoadmapPage";
 import PracticeRoomPage from "./pages/PracticeRoomPage";
 import SessionHistoryPage from "./pages/SessionHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
+import VocabularyPage from "./pages/VocabularyPage";
 import SessionReportPage from "./pages/SessionReportPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminTopicsPage from "./pages/admin/AdminTopicsPage";
@@ -42,6 +43,7 @@ function App() {
           <Route path="practice/:type" element={<PracticeRoomPage />} />
           <Route path="sessions" element={<SessionHistoryPage />} />
           <Route path="sessions/:id" element={<SessionReportPage />} />
+          <Route path="vocabulary" element={<VocabularyPage />} />
           <Route path="profile" element={<ProfilePage />} />
 
           {/* Cosmetic gate only — Admin::BaseController#require_admin is what

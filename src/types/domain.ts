@@ -285,3 +285,47 @@ export interface Progress {
   topics_completed: number;
   sessions_completed: number;
 }
+
+/** Status of the shared dictionary entry behind a saved word. */
+export type VocabularyStatus = "pending" | "enriching" | "ready" | "failed";
+
+export interface VocabularyExample {
+  text: string;
+  translation_vi: string | null;
+}
+
+/**
+ * The shared entry for one word or phrase.
+ *
+ * Shared across every learner and keyed on a normalised lemma, so enrichment
+ * is paid for once. That is not an optimisation: Gemini's free tier allows 20
+ * requests a day, and per-learner enrichment would exhaust it after twenty
+ * saved words.
+ *
+ * Audio arrives as booleans rather than URLs. Playback goes through an
+ * endpoint that mints a presigned link per request; a URL embedded here would
+ * expire while the page sat open.
+ */
+export interface VocabularyEntry {
+  id: number;
+  term: string;
+  lemma: string;
+  status: VocabularyStatus;
+  part_of_speech: string | null;
+  register: string | null;
+  meaning_vi: string | null;
+  meaning_en: string | null;
+  examples: VocabularyExample[];
+  has_audio_uk: boolean;
+  has_audio_us: boolean;
+  error_message: string | null;
+}
+
+/** One learner's claim on a shared entry, plus their own note. */
+export interface VocabularyNote {
+  id: number;
+  note: string | null;
+  source_kind: "manual" | "topic" | "transcript";
+  created_at: string;
+  entry: VocabularyEntry;
+}
